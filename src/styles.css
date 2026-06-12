@@ -179,50 +179,18 @@ body {
   max-width: 46ch;
 }
 
-/* --- the night arc: one quiet bar per night --- */
-.arc {
-  position: relative;
-  height: 26px;
-  margin-top: 18px;
+/* --- dome arc: sky semicircle with per-hour quality coloring --- */
+.arc-svg {
+  width: 100%;
+  margin-top: 20px;
+  overflow: visible;
 }
 
-.arc-track {
-  position: absolute;
-  inset: 11px 0 auto;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--hairline);
-}
-
-.arc-window {
-  position: absolute;
-  top: 9px;
-  height: 7px;
-  border-radius: 4px;
-  background: var(--gold);
-}
-
-.arc-window.excellent {
-  background: var(--gold-hi);
-  box-shadow: 0 0 10px rgba(255, 227, 161, 0.45);
-}
-
-.arc-label {
-  position: absolute;
-  top: 0;
-  transform: translateY(-2px);
+.arc-tick-label {
   font-family: "Space Mono", monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  color: var(--dim);
-}
-
-.arc-label-start {
-  left: 0;
-}
-
-.arc-label-end {
-  right: 0;
+  font-size: 8.5px;
+  fill: rgba(140, 147, 173, 0.65);
+  letter-spacing: 0.04em;
 }
 
 /* --- imaging target grid --- */

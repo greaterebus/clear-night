@@ -33,6 +33,14 @@ export async function fetchForecast(lat, lon, attempts = 3) {
   throw lastError;
 }
 
+// Continuous quality score 0–1 from a forecast block.
+// Cloud cover dominates; visibility is a secondary factor.
+export function blockQuality(block) {
+  const cloud = 1 - block.cloudcover / 100;
+  const vis = Math.min(1, block.visibility / 20000);
+  return cloud * 0.7 + vis * 0.3;
+}
+
 // Build a lookup: for any Date, return the hourly forecast block covering it.
 export function makeForecastLookup(data) {
   const { time, cloud_cover, visibility } = data.hourly;
