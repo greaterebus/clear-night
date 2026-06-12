@@ -225,6 +225,32 @@ body {
   right: 0;
 }
 
+/* --- imaging target grid --- */
+.object-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.object-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--hairline);
+  font-family: "Space Mono", monospace;
+  font-size: 0.67rem;
+  letter-spacing: 0.06em;
+  color: var(--paper);
+  background: var(--ink-raise);
+}
+
+.object-chip-dim {
+  opacity: 0.28;
+}
+
 /* --- later nights --- */
 .later-nights {
   margin-top: 28px;
