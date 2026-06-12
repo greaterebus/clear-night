@@ -52,7 +52,12 @@ function NightRow({ night, big }) {
 
   return (
     <section className={`night ${big ? "night-big" : ""}`}>
-      <h2 className="night-name">{nightLabel(night.offsetDays)}</h2>
+      <div className="night-header">
+        <h2 className="night-name">{nightLabel(night.offsetDays)}</h2>
+        <span className="moon-badge" title={`${Math.round(night.moon.fraction * 100)}% illuminated`}>
+          {night.moon.emoji} {Math.round(night.moon.fraction * 100)}%
+        </span>
+      </div>
       <p className={`night-sentence verdict-${verdict}`}>{sentence}</p>
       {night.windows.some((w) => w.brightMoon) && (
         <p className="night-note">

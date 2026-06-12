@@ -116,6 +116,13 @@ body {
   margin-top: 34px;
 }
 
+.night-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 6px;
+}
+
 .night-name {
   font-family: "Space Mono", monospace;
   font-weight: 400;
@@ -123,7 +130,14 @@ body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--dim);
-  margin: 0 0 6px;
+  margin: 0;
+}
+
+.moon-badge {
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--dim);
+  white-space: nowrap;
 }
 
 .night-sentence {
