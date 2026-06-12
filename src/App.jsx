@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  fetchSevenTimer,
+  fetchForecast,
   makeForecastLookup,
   evaluateNight,
   nightLabel,
@@ -75,7 +75,7 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     setStatus("loading");
-    fetchSevenTimer(location.lat, location.lon)
+    fetchForecast(location.lat, location.lon)
       .then((d) => {
         if (cancelled) return;
         setData(d);
@@ -165,9 +165,9 @@ export default function App() {
 
       <footer className="colophon">
         <p>
-          Clouds, seeing &amp; transparency from{" "}
-          <a href="https://www.7timer.info" target="_blank" rel="noreferrer">
-            7Timer!
+          Cloud cover &amp; visibility from{" "}
+          <a href="https://open-meteo.com" target="_blank" rel="noreferrer">
+            Open-Meteo
           </a>{" "}
           &middot; sun &amp; moon computed locally
           {updatedAt &&

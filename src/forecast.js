@@ -1,64 +1,56 @@
 import SunCalc from "suncalc";
 
 // ---------------------------------------------------------------------------
-// Data source: 7Timer! ASTRO product (free, no key, non-commercial use OK)
-// Docs: https://www.7timer.info/doc.php
+// Data source: Open-Meteo (free, no key, CORS-enabled)
+// Docs: https://open-meteo.com/en/docs
 //
-// Returns 72h of 3-hour steps with, per step:
-//   cloudcover   1..9   (1 = <6% sky covered ... 9 = >94%)  lower is better
-//   seeing       1..8   (1 = <0.5 arcsec ... 8 = >2.5")     lower is better
-//   transparency 1..8   (1 = crystal ... 8 = milky)         lower is better
+// Returns hourly data for 4 days with, per hour:
+//   cloud_cover   0..100  (% sky covered)              lower is better
+//   visibility    meters  (surface visibility)          higher is better
 // ---------------------------------------------------------------------------
 
-const SEVEN_TIMER_URL = (lat, lon) =>
-  `https://www.7timer.info/bin/astro.php?lon=${lon.toFixed(3)}&lat=${lat.toFixed(
+const OPEN_METEO_URL = (lat, lon) =>
+  `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(
     3
-  )}&ac=0&unit=metric&output=json&tzshift=0`;
+  )}&hourly=cloud_cover,visibility&timezone=auto&forecast_days=4`;
 
-// 7Timer occasionally returns malformed JSON (missing values), roughly 1 in
-// 3-5 requests. Retry a few times before giving up.
-export async function fetchSevenTimer(lat, lon, attempts = 4) {
+export async function fetchForecast(lat, lon, attempts = 3) {
   let lastError;
   for (let i = 0; i < attempts; i++) {
     try {
-      const res = await fetch(SEVEN_TIMER_URL(lat, lon), { cache: "no-store" });
-      if (!res.ok) throw new Error(`7Timer responded ${res.status}`);
-      const text = await res.text();
-      const data = JSON.parse(text); // throws on the known malformed responses
-      if (!data?.dataseries?.length || !data.init) {
-        throw new Error("7Timer response missing dataseries");
+      const res = await fetch(OPEN_METEO_URL(lat, lon), { cache: "no-store" });
+      if (!res.ok) throw new Error(`Open-Meteo responded ${res.status}`);
+      const data = await res.json();
+      if (!data?.hourly?.time?.length) {
+        throw new Error("Open-Meteo response missing hourly data");
       }
       return data;
     } catch (err) {
       lastError = err;
-      // brief backoff before retrying
       await new Promise((r) => setTimeout(r, 400 * (i + 1)));
     }
   }
   throw lastError;
 }
 
-// "2026061206" (UTC) -> Date
-export function parseInitTime(init) {
-  const y = +init.slice(0, 4);
-  const m = +init.slice(4, 6) - 1;
-  const d = +init.slice(6, 8);
-  const h = +init.slice(8, 10);
-  return new Date(Date.UTC(y, m, d, h));
-}
-
-// Build a lookup: for any Date, return the 3h forecast block covering it.
+// Build a lookup: for any Date, return the hourly forecast block covering it.
 export function makeForecastLookup(data) {
-  const initMs = parseInitTime(data.init).getTime();
-  const series = data.dataseries;
-  const lastTimepoint = series[series.length - 1].timepoint;
+  const { time, cloud_cover, visibility } = data.hourly;
   return (date) => {
-    const hoursOut = (date.getTime() - initMs) / 3.6e6;
-    if (hoursOut < 0) return series[0]; // model run slightly in the future-past gap
-    if (hoursOut > lastTimepoint) return null; // beyond forecast coverage
-    // timepoints are 3, 6, 9 ... block N covers (timepoint-3, timepoint]
-    const idx = Math.ceil(hoursOut / 3) - 1;
-    return series[Math.max(0, idx)] ?? null;
+    // Open-Meteo returns local-time strings like "2024-01-01T20:00" (no Z).
+    // Construct the same format from the local Date fields.
+    const localIso =
+      [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0"),
+      ].join("-") +
+      "T" +
+      String(date.getHours()).padStart(2, "0") +
+      ":00";
+    const idx = time.indexOf(localIso);
+    if (idx === -1) return null;
+    return { cloudcover: cloud_cover[idx], visibility: visibility[idx] };
   };
 }
 
@@ -66,16 +58,14 @@ export const PRESETS = {
   relaxed: {
     label: "Easygoing",
     blurb: "Worth setting up the scope",
-    cloudMax: 3, // <= ~31% cloud
-    seeingMax: 5,
-    transparencyMax: 6,
+    cloudMax: 31,   // <= 31% cloud cover
+    visMin: 10000,  // >= 10 km visibility
   },
   strict: {
     label: "Picky",
     blurb: "Only genuinely great hours",
-    cloudMax: 2, // <= ~19% cloud
-    seeingMax: 3,
-    transparencyMax: 4,
+    cloudMax: 19,   // <= 19% cloud cover
+    visMin: 15000,  // >= 15 km visibility
   },
 };
 
@@ -125,8 +115,7 @@ export function evaluateNight(lookup, lat, lon, offsetDays, preset) {
 
     const good =
       block.cloudcover <= preset.cloudMax &&
-      block.seeing <= preset.seeingMax &&
-      block.transparency <= preset.transparencyMax;
+      block.visibility >= preset.visMin;
 
     hours.push({ start: t, good, block });
   }
@@ -156,7 +145,7 @@ export function evaluateNight(lookup, lat, lon, offsetDays, preset) {
     const avg = (key) =>
       w.blocks.reduce((s, b) => s + b[key], 0) / w.blocks.length;
     w.quality =
-      avg("cloudcover") <= 2 && avg("seeing") <= 3 && avg("transparency") <= 3
+      avg("cloudcover") <= 10 && avg("visibility") >= 20000
         ? "excellent"
         : "good";
   }
@@ -166,7 +155,6 @@ export function evaluateNight(lookup, lat, lon, offsetDays, preset) {
     ? { start: hours[0].start, end: new Date(hours[hours.length - 1].start.getTime() + 3.6e6) }
     : null;
 
-  // Does the forecast actually cover this night? (7Timer = 72h)
   const covered = hours.some((h) => h.block != null);
 
   return { offsetDays, windows, darkSpan, covered, hours };
