@@ -119,8 +119,12 @@ function MoonPhaseIcon({ phase, size = 18 }) {
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth="1" opacity="0.2" />
-      <path d={litPath} fill="currentColor" />
+      {/* Dark side — dim fill so the unlit portion is visible against the background */}
+      <circle cx={cx} cy={cy} r={r} fill="currentColor" opacity="0.12" />
+      {/* Lit side */}
+      <path d={litPath} fill="currentColor" opacity="0.9" />
+      {/* Outline */}
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth="1" opacity="0.45" />
     </svg>
   );
 }
