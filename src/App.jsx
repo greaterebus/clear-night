@@ -243,6 +243,52 @@ function ObjectGrid({ night, hoveredHour }) {
   );
 }
 
+// --- Hour detail card (shown on pill hover) ---------------------------------
+
+function hourNote(block) {
+  const cloud = block.cloudcover;
+  const vis = block.visibility / 1000;
+  const q = blockQuality(block);
+  if (q >= 0.75) return 'Clear and steady — ideal for any target.';
+  if (q >= 0.5) {
+    if (cloud > 25 && vis < 15) return `${cloud}% clouds and ${vis.toFixed(0)} km visibility thin out the faintest targets.`;
+    if (cloud > 25) return `${cloud}% cloud cover will dim extended nebulae and galaxies.`;
+    return `Visibility at ${vis.toFixed(0)} km — acceptable but not ideal.`;
+  }
+  if (q >= 0.25) {
+    if (cloud > 45) return `${cloud}% cloud cover — only the brightest objects punch through.`;
+    return `${vis.toFixed(0)} km visibility kills contrast for anything faint.`;
+  }
+  return cloud > 60
+    ? `${cloud}% cloud cover — overcast, not worth setting up.`
+    : `Only ${vis.toFixed(0)} km visibility — too murky to observe.`;
+}
+
+function HourDetail({ hour }) {
+  const block = hour.block;
+  const level = qualityLevel(blockQuality(block));
+  const visKm = (block.visibility / 1000).toFixed(0);
+  return (
+    <div className="hour-detail">
+      <div className="hour-detail-head">
+        <span className="hour-detail-time">{fmtHour(hour.start)}</span>
+        <span className={`hour-detail-badge hour-pill-${level}`}>{level}</span>
+      </div>
+      <div className="hour-detail-metrics">
+        <div className="hour-detail-metric">
+          <span className="hour-detail-key">Cloud cover</span>
+          <span className="hour-detail-val">{block.cloudcover}%</span>
+        </div>
+        <div className="hour-detail-metric">
+          <span className="hour-detail-key">Visibility</span>
+          <span className="hour-detail-val">{visKm} km</span>
+        </div>
+      </div>
+      <p className="hour-detail-note">{hourNote(block)}</p>
+    </div>
+  );
+}
+
 // --- Hour pill bar: one pill per dark hour, colored by viewing quality ---
 
 function fmtHour(date) {
@@ -308,6 +354,7 @@ function NightRow({ night, big }) {
         </p>
       )}
       <HourBar night={night} onHover={setHoveredHour} />
+      {hoveredHour && <HourDetail hour={hoveredHour} />}
       <ObjectGrid night={night} hoveredHour={hoveredHour} />
     </section>
   );
