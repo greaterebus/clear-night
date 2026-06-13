@@ -12,7 +12,7 @@ import SunCalc from "suncalc";
 const OPEN_METEO_URL = (lat, lon) =>
   `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(
     3
-  )}&hourly=cloud_cover,visibility&timezone=auto&forecast_days=4`;
+  )}&hourly=cloud_cover,visibility,wind_speed_250hPa&timezone=auto&forecast_days=4`;
 
 export async function fetchForecast(lat, lon, attempts = 3) {
   let lastError;
@@ -43,7 +43,7 @@ export function blockQuality(block) {
 
 // Build a lookup: for any Date, return the hourly forecast block covering it.
 export function makeForecastLookup(data) {
-  const { time, cloud_cover, visibility } = data.hourly;
+  const { time, cloud_cover, visibility, wind_speed_250hPa } = data.hourly;
   return (date) => {
     // Open-Meteo returns local-time strings like "2024-01-01T20:00" (no Z).
     // Construct the same format from the local Date fields.
@@ -58,8 +58,29 @@ export function makeForecastLookup(data) {
       ":00";
     const idx = time.indexOf(localIso);
     if (idx === -1) return null;
-    return { cloudcover: cloud_cover[idx], visibility: visibility[idx] };
+    return {
+      cloudcover: cloud_cover[idx],
+      visibility: visibility[idx],
+      wind250: wind_speed_250hPa?.[idx] ?? null,
+    };
   };
+}
+
+// Seeing quality derived from 250 hPa jet stream wind speed.
+// High jet stream winds = turbulent upper atmosphere = shaky planets.
+// Thresholds from the astronomy community (Pickering scale crosswalk):
+//   <10 m/s (~20 kts): excellent   ≈ Pickering 8–10
+//   10–20 m/s (20–40 kts): good    ≈ Pickering 6–7
+//   20–30 m/s (40–60 kts): fair    ≈ Pickering 3–5
+//   >30 m/s (>60 kts): poor        ≈ Pickering 1–2
+// Returns a plain-language atmosphere stability label based on 250 hPa jet stream speed.
+// "Turbulent" atmosphere causes stars to wobble — bad for planets, irrelevant for deep sky.
+export function seeingLevel(block) {
+  if (block.wind250 == null) return null;
+  if (block.wind250 < 10) return "calm";
+  if (block.wind250 < 20) return "steady";
+  if (block.wind250 < 30) return "unsteady";
+  return "turbulent";
 }
 
 export const PRESETS = {

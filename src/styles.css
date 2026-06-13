@@ -319,6 +319,11 @@ body {
   color: var(--paper);
 }
 
+.seeing-calm      { color: var(--gold-hi); }
+.seeing-steady    { color: var(--gold); }
+.seeing-unsteady  { color: var(--dim); }
+.seeing-turbulent { color: var(--redlight); }
+
 .hour-detail-note {
   margin: 0;
   font-family: "Space Mono", monospace;

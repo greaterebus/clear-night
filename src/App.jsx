@@ -7,6 +7,7 @@ import {
   nightSentence,
   PRESETS,
   blockQuality,
+  seeingLevel,
 } from "./forecast.js";
 
 const DEFAULT_LOCATION = {
@@ -195,6 +196,7 @@ const IMAGING_OBJECTS = [
     },
     checkHour(block) {
       if (block.cloudcover > 50 || block.visibility < 6000) return "Too cloudy";
+      if (seeingLevel(block) === "turbulent") return "Atmosphere too turbulent for detail";
       return null;
     },
   },
@@ -225,6 +227,7 @@ const IMAGING_OBJECTS = [
     checkHour(block, moonFraction) {
       if (moonFraction < 0.1) return "Moon too dim";
       if (block.cloudcover > 60 || block.visibility < 6000) return "Too cloudy";
+      if (seeingLevel(block) === "turbulent") return "Atmosphere too turbulent for detail";
       return null;
     },
   },
@@ -266,7 +269,12 @@ function hourNote(block) {
   const cloud = block.cloudcover;
   const vis = block.visibility / 1000;
   const q = blockQuality(block);
-  if (q >= 0.75) return 'Clear and steady — ideal for any target.';
+  const seeing = seeingLevel(block);
+  if (q >= 0.75) {
+    if (seeing === 'turbulent') return 'Clear sky but rough upper atmosphere — great for deep sky, skip planets.';
+    if (seeing === 'unsteady') return 'Clear sky, mildly unsteady — deep sky is excellent, planets may wobble.';
+    return 'Clear and steady — ideal for any target.';
+  }
   if (q >= 0.5) {
     if (cloud > 25 && vis < 15) return `${cloud}% clouds and ${vis.toFixed(0)} km visibility thin out the faintest targets.`;
     if (cloud > 25) return `${cloud}% cloud cover will dim extended nebulae and galaxies.`;
@@ -285,6 +293,7 @@ function HourDetail({ hour }) {
   const block = hour.block;
   const level = qualityLevel(blockQuality(block));
   const visKm = (block.visibility / 1000).toFixed(0);
+  const seeing = seeingLevel(block);
   return (
     <div className="hour-detail">
       <div className="hour-detail-head">
@@ -300,6 +309,12 @@ function HourDetail({ hour }) {
           <span className="hour-detail-key">Visibility</span>
           <span className="hour-detail-val">{visKm} km</span>
         </div>
+        {seeing && (
+          <div className="hour-detail-metric">
+            <span className="hour-detail-key">Atmosphere</span>
+            <span className={`hour-detail-val seeing-${seeing}`}>{seeing}</span>
+          </div>
+        )}
       </div>
       <p className="hour-detail-note">{hourNote(block)}</p>
     </div>
