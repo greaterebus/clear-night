@@ -11,9 +11,9 @@ import {
 } from "./forecast.js";
 
 const DEFAULT_LOCATION = {
-  name: "Pflugerville, TX",
-  lat: 30.439,
-  lon: -97.62,
+  name: "Austin, TX",
+  lat: 30.2672,
+  lon: -97.7431,
 };
 
 // --- Logo -------------------------------------------------------------------
@@ -412,6 +412,96 @@ function NightRow({ night, big }) {
   );
 }
 
+function PinIcon({ size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 14 14" fill="none" stroke="currentColor"
+         strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M7 1.5 C4.5 1.5, 2.5 3.5, 2.5 6 C2.5 9, 7 12.5, 7 12.5 C7 12.5, 11.5 9, 11.5 6 C11.5 3.5, 9.5 1.5, 7 1.5Z"/>
+      <circle cx="7" cy="6" r="1.6" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
+
+function LocationPicker({ location, onSelect }) {
+  const [open, setOpen]       = useState(false);
+  const [query, setQuery]     = useState('');
+  const [results, setResults] = useState([]);
+  const wrapRef  = useRef(null);
+  const inputRef = useRef(null);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) close();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const close = () => { setOpen(false); setQuery(''); setResults([]); };
+
+  const handleQuery = (e) => {
+    const q = e.target.value;
+    setQuery(q);
+    clearTimeout(timerRef.current);
+    if (q.length < 2) { setResults([]); return; }
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res  = await fetch(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`
+        );
+        const data = await res.json();
+        setResults(data.results ?? []);
+      } catch { setResults([]); }
+    }, 300);
+  };
+
+  const handleSelect = (r) => {
+    onSelect({
+      name: [r.name, r.admin1, r.country].filter(Boolean).join(', '),
+      lat: r.latitude,
+      lon: r.longitude,
+    });
+    close();
+  };
+
+  return (
+    <div className="location-picker" ref={wrapRef}>
+      {open ? (
+        <>
+          <input
+            ref={inputRef}
+            className="location-input"
+            value={query}
+            onChange={handleQuery}
+            placeholder="Search city…"
+            onKeyDown={(e) => e.key === 'Escape' && close()}
+          />
+          {results.length > 0 && (
+            <div className="location-results">
+              {results.map((r, i) => (
+                <button key={i} className="location-result" onClick={() => handleSelect(r)}>
+                  {r.name}{r.admin1 ? `, ${r.admin1}` : ''}{r.country ? `, ${r.country}` : ''}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <button className="location-display" onClick={() => setOpen(true)}>
+          {location.name}
+          <span className="location-edit-icon"><PinIcon size={13} /></span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [presetKey, setPresetKey] = useState("relaxed");
@@ -444,16 +534,14 @@ export default function App() {
     );
   }, [data, presetKey, location]);
 
-  const useMyLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition((pos) => {
-      setLocation({
-        name: "your location",
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
-      });
-    });
-  };
+  // Silently attempt geolocation on first load; fall back to Austin if denied.
+  useEffect(() => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => setLocation({ name: "your location", lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      () => {},
+      { timeout: 5000 }
+    );
+  }, []);
 
   return (
     <main className="page">
@@ -462,14 +550,7 @@ export default function App() {
           <Logo size={18} />
           Clear Night
         </span>
-        <span className="place">
-          {location.name}
-          {location.name !== "your location" && (
-            <button className="link-btn" onClick={useMyLocation}>
-              use my location
-            </button>
-          )}
-        </span>
+        <LocationPicker location={location} onSelect={setLocation} />
       </header>
 
       {status === "loading" && (

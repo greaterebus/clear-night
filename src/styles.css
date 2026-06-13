@@ -88,6 +88,90 @@ body {
   align-items: baseline;
 }
 
+/* --- location picker --- */
+.location-picker {
+  position: relative;
+  font-family: "Space Mono", monospace;
+  font-size: 0.8rem;
+}
+
+.location-display {
+  background: none;
+  border: 1px solid var(--hairline);
+  border-radius: 99px;
+  padding: 3px 10px 3px 11px;
+  color: var(--paper);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.location-display:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.location-edit-icon {
+  color: var(--dim);
+  transition: color 120ms ease;
+  flex-shrink: 0;
+}
+
+.location-display:hover .location-edit-icon {
+  color: var(--gold);
+}
+
+.location-input {
+  background: var(--ink-raise);
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  padding: 3px 9px;
+  color: var(--paper);
+  font-family: "Space Mono", monospace;
+  font-size: 0.75rem;
+  outline: none;
+  width: 160px;
+}
+
+.location-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--ink-raise);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 20;
+  min-width: 220px;
+}
+
+.location-result {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  padding: 8px 12px;
+  color: var(--paper);
+  font-family: "Space Mono", monospace;
+  font-size: 0.62rem;
+  text-align: left;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+}
+
+.location-result:last-child {
+  border-bottom: none;
+}
+
+.location-result:hover {
+  background: rgba(237, 232, 218, 0.05);
+  color: var(--gold);
+}
+
 .link-btn {
   background: none;
   border: none;
