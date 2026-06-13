@@ -16,6 +16,21 @@ const DEFAULT_LOCATION = {
   lon: -97.7431,
 };
 
+async function reverseGeocode(lat, lon) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`,
+      { headers: { 'User-Agent': 'ClearNight/1.0' } }
+    );
+    const d = await res.json();
+    const a = d.address || {};
+    const city = a.city || a.town || a.village || a.municipality || a.hamlet;
+    const region = a.state;
+    if (city) return [city, region].filter(Boolean).join(', ');
+  } catch {}
+  return 'your location';
+}
+
 // --- Logo -------------------------------------------------------------------
 
 function Logo({ size = 28 }) {
@@ -478,16 +493,7 @@ function LocationPicker({ location, onSelect }) {
     navigator.geolocation?.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lon } = pos.coords;
-        let name = 'your location';
-        try {
-          const res = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
-          );
-          const d = await res.json();
-          const city = d.city || d.locality;
-          const region = d.principalSubdivisionCode?.split('-')[1] || d.principalSubdivision;
-          if (city) name = [city, region].filter(Boolean).join(', ');
-        } catch { /* fall back to generic name */ }
+        const name = await reverseGeocode(lat, lon);
         onSelect({ name, lat, lon });
         close();
       },
@@ -573,16 +579,7 @@ export default function App() {
     navigator.geolocation?.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lon } = pos.coords;
-        let name = 'your location';
-        try {
-          const res = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
-          );
-          const d = await res.json();
-          const city = d.city || d.locality;
-          const region = d.principalSubdivisionCode?.split('-')[1] || d.principalSubdivision;
-          if (city) name = [city, region].filter(Boolean).join(', ');
-        } catch { /* fall back to generic name */ }
+        const name = await reverseGeocode(lat, lon);
         setLocation({ name, lat, lon });
       },
       () => {},
