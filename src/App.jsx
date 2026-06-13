@@ -470,6 +470,18 @@ function LocationPicker({ location, onSelect }) {
     close();
   };
 
+  const handleUseMyLocation = () => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => {
+        onSelect({ name: 'your location', lat: pos.coords.latitude, lon: pos.coords.longitude });
+        close();
+      },
+      () => {},
+      { timeout: 8000 }
+    );
+    close();
+  };
+
   return (
     <div className="location-picker" ref={wrapRef}>
       {open ? (
@@ -482,15 +494,18 @@ function LocationPicker({ location, onSelect }) {
             placeholder="Search city…"
             onKeyDown={(e) => e.key === 'Escape' && close()}
           />
-          {results.length > 0 && (
-            <div className="location-results">
-              {results.map((r, i) => (
-                <button key={i} className="location-result" onClick={() => handleSelect(r)}>
-                  {r.name}{r.admin1 ? `, ${r.admin1}` : ''}{r.country ? `, ${r.country}` : ''}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="location-results">
+            {navigator.geolocation && (
+              <button className="location-result location-result-geo" onClick={handleUseMyLocation}>
+                <PinIcon size={11} /> Use my location
+              </button>
+            )}
+            {results.map((r, i) => (
+              <button key={i} className="location-result" onClick={() => handleSelect(r)}>
+                {r.name}{r.admin1 ? `, ${r.admin1}` : ''}{r.country ? `, ${r.country}` : ''}
+              </button>
+            ))}
+          </div>
         </>
       ) : (
         <button className="location-display" onClick={() => setOpen(true)}>

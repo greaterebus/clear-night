@@ -172,6 +172,19 @@ body {
   color: var(--gold);
 }
 
+.location-result-geo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.location-result-geo:hover {
+  background: rgba(245, 199, 107, 0.08);
+  color: var(--gold-hi);
+}
+
 .link-btn {
   background: none;
   border: none;
