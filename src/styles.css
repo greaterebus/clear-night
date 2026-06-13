@@ -179,18 +179,46 @@ body {
   max-width: 46ch;
 }
 
-/* --- dome arc: sky semicircle with per-hour quality coloring --- */
-.arc-svg {
-  width: 100%;
-  margin-top: 20px;
-  overflow: visible;
+/* --- hour pill bar --- */
+.hour-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 16px;
 }
 
-.arc-tick-label {
+.hour-pill {
+  padding: 3px 9px;
+  border-radius: 99px;
   font-family: "Space Mono", monospace;
-  font-size: 8.5px;
-  fill: rgba(140, 147, 173, 0.65);
-  letter-spacing: 0.04em;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  border: 1px solid;
+}
+
+.hour-pill-poor {
+  background: rgba(140, 147, 173, 0.06);
+  border-color: rgba(140, 147, 173, 0.16);
+  color: rgba(140, 147, 173, 0.38);
+}
+
+.hour-pill-marginal {
+  background: rgba(245, 199, 107, 0.08);
+  border-color: rgba(245, 199, 107, 0.28);
+  color: rgba(245, 199, 107, 0.55);
+}
+
+.hour-pill-good {
+  background: rgba(245, 199, 107, 0.18);
+  border-color: rgba(245, 199, 107, 0.55);
+  color: var(--gold);
+}
+
+.hour-pill-excellent {
+  background: rgba(255, 227, 161, 0.2);
+  border-color: rgba(255, 227, 161, 0.8);
+  color: var(--gold-hi);
+  box-shadow: 0 0 8px rgba(255, 227, 161, 0.18);
 }
 
 /* --- imaging target grid --- */

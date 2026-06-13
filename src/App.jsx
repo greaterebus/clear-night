@@ -147,29 +147,7 @@ function ObjectGrid({ night }) {
   );
 }
 
-// --- Dome arc: semicircle from dusk (left) to dawn (right), per-hour quality coloring ---
-
-const ARC_W = 280, ARC_H = 110;
-const ARC_CX = ARC_W / 2, ARC_CY = 90;
-const ARC_RX = 126, ARC_RY = 60;
-
-function arcPt(frac, rx = ARC_RX, ry = ARC_RY) {
-  const θ = Math.PI * (1 - frac);
-  return [ARC_CX + rx * Math.cos(θ), ARC_CY - ry * Math.sin(θ)];
-}
-
-function segPath(f1, f2) {
-  const [x1, y1] = arcPt(f1);
-  const [x2, y2] = arcPt(f2);
-  return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${ARC_RX} ${ARC_RY} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
-}
-
-function qualityStroke(q) {
-  if (q < 0.25) return ['#8C93AD', 0.22];
-  if (q < 0.5)  return ['#F5C76B', 0.42];
-  if (q < 0.75) return ['#F5C76B', 0.78];
-  return ['#FFE3A1', 1.0];
-}
+// --- Hour pill bar: one pill per dark hour, colored by viewing quality ---
 
 function fmtHour(date) {
   const h = date.getHours();
@@ -178,68 +156,26 @@ function fmtHour(date) {
   return h < 12 ? `${h}a` : `${h - 12}p`;
 }
 
-function NightArc({ night }) {
-  if (!night.darkSpan || night.hours.length === 0) return null;
-  const { start, end } = night.darkSpan;
-  const spanMs = end.getTime() - start.getTime();
-  const frac = (ms) => (ms - start.getTime()) / spanMs;
+function qualityLevel(q) {
+  if (q < 0.25) return 'poor';
+  if (q < 0.5)  return 'marginal';
+  if (q < 0.75) return 'good';
+  return 'excellent';
+}
 
-  // Even-hour tick labels every 2 h, not too close to dusk/dawn endpoints
-  const ticks = [];
-  const cur = new Date(start.getTime());
-  cur.setMinutes(0, 0, 0);
-  if (cur.getTime() < start.getTime()) cur.setHours(cur.getHours() + 1);
-  while (cur.getHours() % 2 !== 0) cur.setHours(cur.getHours() + 1);
-  while (cur.getTime() <= end.getTime()) {
-    const f = frac(cur.getTime());
-    if (f > 0.08 && f < 0.92) ticks.push(new Date(cur));
-    cur.setHours(cur.getHours() + 2);
-  }
-
+function HourBar({ night }) {
+  if (night.hours.length === 0) return null;
   return (
-    <svg viewBox={`0 0 ${ARC_W} ${ARC_H}`} className="arc-svg" aria-hidden="true">
-      {/* Faint full-night track */}
-      <path d={segPath(0, 1)} fill="none" stroke="rgba(237,232,218,0.08)" strokeWidth="3" />
-
-      {/* Per-hour quality-colored segments */}
+    <div className="hour-bar">
       {night.hours.map((h, i) => {
-        const f1 = frac(h.start.getTime());
-        const f2 = Math.min(frac(h.start.getTime() + 3.6e6), 1);
-        const [color, opacity] = qualityStroke(blockQuality(h.block));
+        const level = qualityLevel(blockQuality(h.block));
         return (
-          <path
-            key={i}
-            d={segPath(f1, f2)}
-            fill="none"
-            stroke={color}
-            strokeWidth="4"
-            strokeLinecap="butt"
-            opacity={opacity}
-          />
+          <span key={i} className={`hour-pill hour-pill-${level}`}>
+            {fmtHour(h.start)}
+          </span>
         );
       })}
-
-      {/* Hour tick marks + labels */}
-      {ticks.map((t) => {
-        const f = frac(t.getTime());
-        const [ax, ay] = arcPt(f);
-        const [lx, ly] = arcPt(f, ARC_RX + 14, ARC_RY + 14);
-        const θ = Math.PI * (1 - f);
-        const anchor = θ > Math.PI * 0.6 ? 'end' : θ < Math.PI * 0.4 ? 'start' : 'middle';
-        return (
-          <g key={t.getTime()}>
-            <line x1={ax} y1={ay} x2={lx} y2={ly} stroke="rgba(237,232,218,0.18)" strokeWidth="1" />
-            <text x={lx} y={ly + 4} textAnchor={anchor} className="arc-tick-label">
-              {fmtHour(t)}
-            </text>
-          </g>
-        );
-      })}
-
-      {/* Dusk / dawn endpoint labels */}
-      <text x={ARC_CX - ARC_RX} y={ARC_CY + 14} textAnchor="middle" className="arc-tick-label">dusk</text>
-      <text x={ARC_CX + ARC_RX} y={ARC_CY + 14} textAnchor="middle" className="arc-tick-label">dawn</text>
-    </svg>
+    </div>
   );
 }
 
@@ -263,7 +199,7 @@ function NightRow({ night, big }) {
           galaxies and nebulae.
         </p>
       )}
-      <NightArc night={night} />
+      <HourBar night={night} />
       <ObjectGrid night={night} />
     </section>
   );
