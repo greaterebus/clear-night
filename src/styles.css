@@ -180,9 +180,14 @@ body {
   border-bottom: 1px solid var(--hairline);
 }
 
-.location-result-geo:hover {
+.location-result-geo:hover:not(:disabled) {
   background: rgba(245, 199, 107, 0.08);
   color: var(--gold-hi);
+}
+
+.location-result-geo:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .link-btn {
