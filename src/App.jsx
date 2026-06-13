@@ -426,6 +426,8 @@ function LocationPicker({ location, onSelect }) {
   const [open, setOpen]       = useState(false);
   const [query, setQuery]     = useState('');
   const [results, setResults] = useState([]);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError]     = useState(false);
   const wrapRef  = useRef(null);
   const inputRef = useRef(null);
   const timerRef = useRef(null);
@@ -443,7 +445,7 @@ function LocationPicker({ location, onSelect }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const close = () => { setOpen(false); setQuery(''); setResults([]); };
+  const close = () => { setOpen(false); setQuery(''); setResults([]); setGeoLoading(false); setGeoError(false); };
 
   const handleQuery = (e) => {
     const q = e.target.value;
@@ -471,15 +473,27 @@ function LocationPicker({ location, onSelect }) {
   };
 
   const handleUseMyLocation = () => {
+    setGeoLoading(true);
+    setGeoError(false);
     navigator.geolocation?.getCurrentPosition(
-      (pos) => {
-        onSelect({ name: 'your location', lat: pos.coords.latitude, lon: pos.coords.longitude });
+      async (pos) => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        let name = 'your location';
+        try {
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+          );
+          const d = await res.json();
+          const city = d.city || d.locality;
+          const region = d.principalSubdivisionCode?.split('-')[1] || d.principalSubdivision;
+          if (city) name = [city, region].filter(Boolean).join(', ');
+        } catch { /* fall back to generic name */ }
+        onSelect({ name, lat, lon });
         close();
       },
-      () => {},
+      () => { setGeoLoading(false); setGeoError(true); },
       { timeout: 8000 }
     );
-    close();
   };
 
   return (
@@ -496,8 +510,13 @@ function LocationPicker({ location, onSelect }) {
           />
           <div className="location-results">
             {navigator.geolocation && (
-              <button className="location-result location-result-geo" onClick={handleUseMyLocation}>
-                <PinIcon size={11} /> Use my location
+              <button
+                className="location-result location-result-geo"
+                onClick={handleUseMyLocation}
+                disabled={geoLoading}
+              >
+                <PinIcon size={11} />
+                {geoLoading ? 'Locating…' : geoError ? 'Location access denied' : 'Use my location'}
               </button>
             )}
             {results.map((r, i) => (
@@ -552,7 +571,20 @@ export default function App() {
   // Silently attempt geolocation on first load; fall back to Austin if denied.
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
-      (pos) => setLocation({ name: "your location", lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      async (pos) => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        let name = 'your location';
+        try {
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+          );
+          const d = await res.json();
+          const city = d.city || d.locality;
+          const region = d.principalSubdivisionCode?.split('-')[1] || d.principalSubdivision;
+          if (city) name = [city, region].filter(Boolean).join(', ');
+        } catch { /* fall back to generic name */ }
+        setLocation({ name, lat, lon });
+      },
       () => {},
       { timeout: 5000 }
     );
