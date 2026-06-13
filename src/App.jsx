@@ -105,15 +105,23 @@ function MoonPhaseIcon({ phase, size = 18 }) {
   // Build the lit-area path:
   //   1. Major semicircle (always-lit half of the moon)
   //   2. Terminator ellipse back to start (defines the shadow boundary)
+  // Return arc goes from bottom (cx, cy+r) back to top (cx, cy-r).
+  // In SVG (y-axis down): CCW (sweep=0) from the bottom goes via the RIGHT side;
+  //                        CW  (sweep=1) from the bottom goes via the LEFT side.
+  // Crescent needs the return to stay on the SAME side as the lit half (thin sliver).
+  // Gibbous needs the return to cross to the DARK side (enclose the large lit area).
   let litPath;
   if (waxing) {
-    // Lit on right side. Main arc: top → CW → bottom.
-    // Terminator: crescent → stays right (sweep 1); gibbous → swings left (sweep 0).
-    const ts = termRxRaw >= 0 ? 1 : 0;
+    // Lit on right. Main arc: top → CW (sweep 1) → bottom via RIGHT.
+    // Crescent (termRxRaw > 0): return stays RIGHT → sweep 0 (CCW)
+    // Gibbous  (termRxRaw < 0): return crosses LEFT → sweep 1 (CW)
+    const ts = termRxRaw < 0 ? 1 : 0;
     litPath = `M${cx} ${cy - r} A${r} ${r} 0 1 1 ${cx} ${cy + r} A${termRx} ${r} 0 0 ${ts} ${cx} ${cy - r}Z`;
   } else {
-    // Lit on left side. Main arc: top → CCW → bottom.
-    const ts = termRxRaw < 0 ? 1 : 0;
+    // Lit on left. Main arc: top → CCW (sweep 0) → bottom via LEFT.
+    // Crescent (termRxRaw > 0): return stays LEFT → sweep 1 (CW)
+    // Gibbous  (termRxRaw < 0): return crosses RIGHT → sweep 0 (CCW)
+    const ts = termRxRaw >= 0 ? 1 : 0;
     litPath = `M${cx} ${cy - r} A${r} ${r} 0 1 0 ${cx} ${cy + r} A${termRx} ${r} 0 0 ${ts} ${cx} ${cy - r}Z`;
   }
 
