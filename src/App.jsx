@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchForecast,
   makeForecastLookup,
@@ -14,6 +14,23 @@ const DEFAULT_LOCATION = {
   lat: 30.439,
   lon: -97.62,
 };
+
+// --- Logo -------------------------------------------------------------------
+
+function Logo({ size = 28 }) {
+  // Classic cartoon crescent: two circles of equal radius (R=13), offset horizontally.
+  // Outer circle center (17,16), shadow circle center (27,16) — both r=13.
+  // Horns meet at (22,4) and (22,28); crescent width ≈10px at equator.
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-label="Clear Night">
+      <path
+        d="M22 4 A13 13 0 1 0 22 28 A13 13 0 0 1 22 4Z"
+        fill="#f5c76b"
+        transform="rotate(-35, 16, 16)"
+      />
+    </svg>
+  );
+}
 
 // --- Target icons -----------------------------------------------------------
 
@@ -328,6 +345,24 @@ function HourBar({ night, onHover }) {
 
 function NightRow({ night, big }) {
   const [hoveredHour, setHoveredHour] = useState(null);
+  const [shownHour, setShownHour] = useState(null);
+  const timerRef = useRef(null);
+
+  const handleHover = (hour) => {
+    setHoveredHour(hour);
+    clearTimeout(timerRef.current);
+    if (!hour) {
+      setShownHour(null);
+      return;
+    }
+    // If the card is already visible, swap its content immediately so it
+    // doesn't flicker away and back as the user moves between pills.
+    setShownHour(prev => prev !== null ? hour : null);
+    timerRef.current = setTimeout(() => setShownHour(hour), 700);
+  };
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
   const sentence = nightSentence(night);
   const verdict =
     !night.covered ? "unknown" : night.windows.length > 0 ? "go" : "no";
@@ -353,8 +388,10 @@ function NightRow({ night, big }) {
           galaxies and nebulae.
         </p>
       )}
-      <HourBar night={night} onHover={setHoveredHour} />
-      {hoveredHour && <HourDetail hour={hoveredHour} />}
+      <div className="hour-bar-wrap">
+        <HourBar night={night} onHover={handleHover} />
+        {shownHour && <HourDetail hour={shownHour} />}
+      </div>
       <ObjectGrid night={night} hoveredHour={hoveredHour} />
     </section>
   );
@@ -406,7 +443,10 @@ export default function App() {
   return (
     <main className="page">
       <header className="masthead">
-        <span className="wordmark">Clear Night</span>
+        <span className="wordmark">
+          <Logo size={18} />
+          Clear Night
+        </span>
         <span className="place">
           {location.name}
           {location.name !== "your location" && (

@@ -63,18 +63,20 @@ body {
 .masthead {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--hairline);
 }
 
 .wordmark {
-  font-family: "Space Mono", monospace;
-  font-size: 0.8rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--dim);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: "Instrument Serif", serif;
+  font-size: 1.45rem;
+  letter-spacing: 0.08em;
+  color: var(--gold);
 }
 
 .place {
@@ -248,17 +250,25 @@ body {
 }
 
 /* --- hour detail card --- */
+.hour-bar-wrap {
+  position: relative;
+}
+
 .hour-detail {
-  margin-top: 10px;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 10;
   padding: 10px 14px 12px;
   background: var(--ink-raise);
   border: 1px solid var(--hairline);
   border-radius: 10px;
-  animation: slideDown 120ms ease;
+  animation: fadeInUp 180ms ease;
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-4px); }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
