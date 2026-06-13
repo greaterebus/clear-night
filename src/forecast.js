@@ -77,17 +77,6 @@ export const PRESETS = {
   },
 };
 
-function moonEmoji(phase) {
-  if (phase < 0.0625 || phase >= 0.9375) return "🌑";
-  if (phase < 0.1875) return "🌒";
-  if (phase < 0.3125) return "🌓";
-  if (phase < 0.4375) return "🌔";
-  if (phase < 0.5625) return "🌕";
-  if (phase < 0.6875) return "🌖";
-  if (phase < 0.8125) return "🌗";
-  return "🌘";
-}
-
 // Sun altitude below this counts as "dark enough". Astronomical darkness is
 // -18°; -15° is a pragmatic cutoff that keeps usable late-twilight hours.
 const DARK_ALTITUDE_DEG = -15;
@@ -179,7 +168,7 @@ export function evaluateNight(lookup, lat, lon, offsetDays, preset) {
   // Moon phase at midnight of this night (phase is global, not location-dependent)
   const midnight = new Date(anchor.getTime() + 12 * 3.6e6);
   const illum = SunCalc.getMoonIllumination(midnight);
-  const moon = { emoji: moonEmoji(illum.phase), fraction: illum.fraction };
+  const moon = { phase: illum.phase, fraction: illum.fraction };
 
   return { offsetDays, windows, darkSpan, covered, hours, moon };
 }

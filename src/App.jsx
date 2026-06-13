@@ -72,6 +72,59 @@ function LunarIcon({ size = 16 }) {
   );
 }
 
+function CameraIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="1.5" y="5.5" width="15" height="10.5" rx="2" strokeWidth="1.3" />
+      <circle cx="9" cy="11" r="3" strokeWidth="1.3" />
+      <path d="M6.2 5.5 L7.2 3 L10.8 3 L11.8 5.5" strokeWidth="1.1" />
+    </svg>
+  );
+}
+
+// MoonPhaseIcon renders the exact lit fraction as an SVG using arc math.
+// phase 0 = new moon, 0.25 = first quarter, 0.5 = full, 0.75 = last quarter.
+function MoonPhaseIcon({ phase, size = 18 }) {
+  const r = (size - 4) / 2;
+  const cx = size / 2, cy = size / 2;
+
+  if (phase < 0.02 || phase > 0.98) {
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
+        <circle cx={cx} cy={cy} r={r} opacity="0.35" />
+      </svg>
+    );
+  }
+
+  // termRxRaw: x-radius of the terminator ellipse, signed to encode its curvature.
+  // Positive → crescent side; negative → gibbous side.
+  const termRxRaw = r * Math.cos(phase * 2 * Math.PI);
+  const termRx = Math.max(0.01, Math.abs(termRxRaw));
+  const waxing = phase <= 0.5;
+
+  // Build the lit-area path:
+  //   1. Major semicircle (always-lit half of the moon)
+  //   2. Terminator ellipse back to start (defines the shadow boundary)
+  let litPath;
+  if (waxing) {
+    // Lit on right side. Main arc: top → CW → bottom.
+    // Terminator: crescent → stays right (sweep 1); gibbous → swings left (sweep 0).
+    const ts = termRxRaw >= 0 ? 1 : 0;
+    litPath = `M${cx} ${cy - r} A${r} ${r} 0 1 1 ${cx} ${cy + r} A${termRx} ${r} 0 0 ${ts} ${cx} ${cy - r}Z`;
+  } else {
+    // Lit on left side. Main arc: top → CCW → bottom.
+    const ts = termRxRaw < 0 ? 1 : 0;
+    litPath = `M${cx} ${cy - r} A${r} ${r} 0 1 0 ${cx} ${cy + r} A${termRx} ${r} 0 0 ${ts} ${cx} ${cy - r}Z`;
+  }
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth="1" opacity="0.2" />
+      <path d={litPath} fill="currentColor" />
+    </svg>
+  );
+}
+
 // --- Imaging target grid ----------------------------------------------------
 
 const IMAGING_OBJECTS = [
@@ -150,24 +203,30 @@ const IMAGING_OBJECTS = [
 
 function ObjectGrid({ night, hoveredHour }) {
   return (
-    <div className="object-grid" aria-label="Imaging targets">
-      {IMAGING_OBJECTS.map(({ id, label, Icon, check, checkHour }) => {
-        const reason = hoveredHour
-          ? checkHour(hoveredHour.block, night.moon.fraction)
-          : check(night);
-        const good = reason === null;
-        return (
-          <span
-            key={id}
-            className={`object-chip${good ? "" : " object-chip-dim"}`}
-            title={good ? undefined : reason}
-            aria-label={`${label}: ${good ? "good conditions" : reason}`}
-          >
-            <Icon size={15} />
-            {label}
-          </span>
-        );
-      })}
+    <div>
+      <div className="targets-label">
+        <CameraIcon size={13} />
+        Targets
+      </div>
+      <div className="object-grid" aria-label="Imaging targets">
+        {IMAGING_OBJECTS.map(({ id, label, Icon, check, checkHour }) => {
+          const reason = hoveredHour
+            ? checkHour(hoveredHour.block, night.moon.fraction)
+            : check(night);
+          const good = reason === null;
+          return (
+            <span
+              key={id}
+              className={`object-chip${good ? "" : " object-chip-dim"}`}
+              title={good ? undefined : reason}
+              aria-label={`${label}: ${good ? "good conditions" : reason}`}
+            >
+              <Icon size={15} />
+              {label}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -218,10 +277,16 @@ function NightRow({ night, big }) {
   return (
     <section className={`night ${big ? "night-big" : ""}`}>
       <div className="night-header">
-        <h2 className="night-name">{nightLabel(night.offsetDays)}</h2>
-        <span className="moon-badge" title={`${Math.round(night.moon.fraction * 100)}% illuminated`}>
-          {night.moon.emoji} {Math.round(night.moon.fraction * 100)}%
-        </span>
+        <div className="night-title">
+          <span
+            className="moon-indicator"
+            title={`${Math.round(night.moon.fraction * 100)}% illuminated`}
+          >
+            <MoonPhaseIcon phase={night.moon.phase} size={18} />
+            <span className="moon-pct">{Math.round(night.moon.fraction * 100)}%</span>
+          </span>
+          <h2 className="night-name">{nightLabel(night.offsetDays)}</h2>
+        </div>
       </div>
       <p className={`night-sentence verdict-${verdict}`}>{sentence}</p>
       {night.windows.some((w) => w.brightMoon) && (

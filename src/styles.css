@@ -117,10 +117,37 @@ body {
 }
 
 .night-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   margin: 0 0 6px;
+}
+
+.night-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.moon-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--dim);
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  cursor: default;
+  flex-shrink: 0;
+}
+
+.moon-pct {
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 150ms ease, max-width 150ms ease;
+}
+
+.moon-indicator:hover .moon-pct {
+  opacity: 1;
+  max-width: 4em;
 }
 
 .night-name {
@@ -133,11 +160,17 @@ body {
   margin: 0;
 }
 
-.moon-badge {
+.targets-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: "Space Mono", monospace;
-  font-size: 0.72rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--dim);
-  white-space: nowrap;
+  margin-top: 20px;
+  margin-bottom: 8px;
 }
 
 .night-sentence {
@@ -219,7 +252,6 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 16px;
 }
 
 .object-chip {
