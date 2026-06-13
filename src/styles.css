@@ -126,7 +126,7 @@ body {
 .night-name {
   font-family: "Space Mono", monospace;
   font-weight: 400;
-  font-size: 0.78rem;
+  font-size: 1rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--dim);
@@ -142,6 +142,7 @@ body {
 
 .night-sentence {
   font-family: "Instrument Serif", serif;
+  font-size: 1.5rem;
   margin: 0;
   line-height: 1.12;
   text-wrap: balance;
@@ -149,14 +150,6 @@ body {
 
 .night-big {
   margin-top: 8vh;
-}
-
-.night-big .night-sentence {
-  font-size: clamp(2.4rem, 8.5vw, 3.6rem);
-}
-
-.later-nights .night-sentence {
-  font-size: 1.45rem;
 }
 
 .verdict-go {
@@ -241,10 +234,11 @@ body {
   letter-spacing: 0.06em;
   color: var(--paper);
   background: var(--ink-raise);
+  transition: opacity 150ms ease;
 }
 
 .object-chip-dim {
-  opacity: 0.28;
+  opacity: 0.22;
 }
 
 /* --- later nights --- */

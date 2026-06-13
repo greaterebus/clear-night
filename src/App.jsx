@@ -84,6 +84,11 @@ const IMAGING_OBJECTS = [
       if (night.moon.fraction > 0.25) return "Moon too bright";
       return null;
     },
+    checkHour(block, moonFraction) {
+      if (block.cloudcover > 35 || block.visibility < 10000) return "Too cloudy";
+      if (moonFraction > 0.25) return "Moon too bright";
+      return null;
+    },
   },
   {
     id: "narrowband",
@@ -93,6 +98,10 @@ const IMAGING_OBJECTS = [
       if (!night.covered || night.windows.length === 0) return "Too cloudy";
       return null;
     },
+    checkHour(block) {
+      if (block.cloudcover > 55 || block.visibility < 6000) return "Too cloudy";
+      return null;
+    },
   },
   {
     id: "planets",
@@ -100,6 +109,10 @@ const IMAGING_OBJECTS = [
     Icon: PlanetIcon,
     check(night) {
       if (!night.covered || night.windows.length === 0) return "Too cloudy";
+      return null;
+    },
+    checkHour(block) {
+      if (block.cloudcover > 50 || block.visibility < 8000) return "Too cloudy";
       return null;
     },
   },
@@ -112,6 +125,11 @@ const IMAGING_OBJECTS = [
       if (night.moon.fraction > 0.5) return "Moon too bright";
       return null;
     },
+    checkHour(block, moonFraction) {
+      if (block.cloudcover > 50 || block.visibility < 8000) return "Too cloudy";
+      if (moonFraction > 0.5) return "Moon too bright";
+      return null;
+    },
   },
   {
     id: "lunar",
@@ -122,14 +140,21 @@ const IMAGING_OBJECTS = [
       if (!night.covered || night.windows.length === 0) return "Too cloudy";
       return null;
     },
+    checkHour(block, moonFraction) {
+      if (moonFraction < 0.1) return "Moon too dim";
+      if (block.cloudcover > 60 || block.visibility < 6000) return "Too cloudy";
+      return null;
+    },
   },
 ];
 
-function ObjectGrid({ night }) {
+function ObjectGrid({ night, hoveredHour }) {
   return (
     <div className="object-grid" aria-label="Imaging targets">
-      {IMAGING_OBJECTS.map(({ id, label, Icon, check }) => {
-        const reason = check(night);
+      {IMAGING_OBJECTS.map(({ id, label, Icon, check, checkHour }) => {
+        const reason = hoveredHour
+          ? checkHour(hoveredHour.block, night.moon.fraction)
+          : check(night);
         const good = reason === null;
         return (
           <span
@@ -163,14 +188,19 @@ function qualityLevel(q) {
   return 'excellent';
 }
 
-function HourBar({ night }) {
+function HourBar({ night, onHover }) {
   if (night.hours.length === 0) return null;
   return (
     <div className="hour-bar">
       {night.hours.map((h, i) => {
         const level = qualityLevel(blockQuality(h.block));
         return (
-          <span key={i} className={`hour-pill hour-pill-${level}`}>
+          <span
+            key={i}
+            className={`hour-pill hour-pill-${level}`}
+            onMouseEnter={() => onHover(h)}
+            onMouseLeave={() => onHover(null)}
+          >
             {fmtHour(h.start)}
           </span>
         );
@@ -180,6 +210,7 @@ function HourBar({ night }) {
 }
 
 function NightRow({ night, big }) {
+  const [hoveredHour, setHoveredHour] = useState(null);
   const sentence = nightSentence(night);
   const verdict =
     !night.covered ? "unknown" : night.windows.length > 0 ? "go" : "no";
@@ -199,8 +230,8 @@ function NightRow({ night, big }) {
           galaxies and nebulae.
         </p>
       )}
-      <HourBar night={night} />
-      <ObjectGrid night={night} />
+      <HourBar night={night} onHover={setHoveredHour} />
+      <ObjectGrid night={night} hoveredHour={hoveredHour} />
     </section>
   );
 }
