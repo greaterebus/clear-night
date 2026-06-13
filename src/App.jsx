@@ -167,7 +167,7 @@ const IMAGING_OBJECTS = [
       return null;
     },
     checkHour(block, moonFraction) {
-      if (block.cloudcover > 35 || block.visibility < 10000) return "Too cloudy";
+      if (block.cloudcover > 30 || block.visibility < 10000) return "Too cloudy";
       if (moonFraction > 0.25) return "Moon too bright";
       return null;
     },
@@ -194,7 +194,7 @@ const IMAGING_OBJECTS = [
       return null;
     },
     checkHour(block) {
-      if (block.cloudcover > 50 || block.visibility < 8000) return "Too cloudy";
+      if (block.cloudcover > 50 || block.visibility < 6000) return "Too cloudy";
       return null;
     },
   },
@@ -204,12 +204,12 @@ const IMAGING_OBJECTS = [
     Icon: ClusterIcon,
     check(night) {
       if (!night.covered || night.windows.length === 0) return "Too cloudy";
-      if (night.moon.fraction > 0.5) return "Moon too bright";
+      if (night.moon.fraction > 0.7) return "Moon too bright";
       return null;
     },
     checkHour(block, moonFraction) {
-      if (block.cloudcover > 50 || block.visibility < 8000) return "Too cloudy";
-      if (moonFraction > 0.5) return "Moon too bright";
+      if (block.cloudcover > 50 || block.visibility < 6000) return "Too cloudy";
+      if (moonFraction > 0.7) return "Moon too bright";
       return null;
     },
   },

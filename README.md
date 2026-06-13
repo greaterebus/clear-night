@@ -1,60 +1,99 @@
-# Clear Night 🔭
+# Clear Night
 
-One plain answer to one question: **is tonight good for astronomy?**
+Plain-language astronomy forecasting. One question: is tonight worth going out?
 
-No hourly grids, no color-coded boxes. Just sentences like *"Good 2 AM – 5 AM."*
-for tonight and the next two nights, plus a single quiet bar showing where the
-good windows fall between dusk and dawn.
+Live at **https://greaterebus.github.io/clear-night/**
 
-## How it decides
+---
 
-For each dark hour (sun more than 15° below the horizon), the hour counts as
-**good** when all three pass the threshold:
+## What it does
 
-| Metric        | Source   | Easygoing | Picky |
-| ------------- | -------- | --------- | ----- |
-| Cloud cover   | 7Timer!  | ≤ 3 (~31%) | ≤ 2 (~19%) |
-| Seeing        | 7Timer!  | ≤ 5       | ≤ 3   |
-| Transparency  | 7Timer!  | ≤ 6       | ≤ 4   |
+Fetches hourly cloud cover and visibility from [Open-Meteo](https://open-meteo.com) (free, no API key, CORS-enabled), computes civil/astronomical darkness with [SunCalc](https://github.com/mourner/suncalc), and scores each dark hour of the next three nights. The result is a plain-English verdict, an hour-by-hour pill bar, and an imaging target grid that updates as you hover.
 
-Consecutive good hours merge into windows. If a bright moon (>55% lit) is up
-during a window, you get a note — still great for the Moon and planets, less
-so for faint fuzzies.
+---
 
-- **Weather data:** [7Timer!](https://www.7timer.info) ASTRO product — free,
-  no API key, 72-hour forecast in 3-hour steps. Non-commercial use only.
-- **Sun & moon:** computed in the browser with
-  [SunCalc](https://github.com/mourner/suncalc). No API needed.
+## Forecast criteria
 
-Tune the thresholds in `src/forecast.js` (`PRESETS`). The default location is
-set in `src/App.jsx` (`DEFAULT_LOCATION`).
+### Presets
+
+| Preset | Cloud cover | Visibility | Rationale |
+|---|---|---|---|
+| **Easygoing** | ≤ 31% | ≥ 10 km | Sits at the 7Timer cloud level-3/4 boundary and the Clear Dark Sky transparency cutoff — the community-recognised edge of "marginal but worth trying" |
+| **Picky** | ≤ 19% | ≥ 15 km | Firmly within the community "go" zone (0–20% is the most common stated hard limit on Cloudy Nights) |
+
+### Per-target thresholds
+
+| Target | Cloud limit | Visibility limit | Moon limit | Notes |
+|---|---|---|---|---|
+| **Galaxies** | 30% | 10 km | 25% illumination | Low surface brightness — any sky brightening competes directly with signal. 30% cloud and 25% moon match the tightest community consensus (telescope.live explicitly states 25% as the galaxy moon ceiling) |
+| **Narrowband nebulae** | 55% | 6 km | — (moon-tolerant) | Narrowband filters (Hα, SII, OIII) isolate specific wavelengths and reject broadband moonlight. Community practitioners routinely shoot at full moon. 55% cloud is at the outer edge of what is reported as "worth trying" |
+| **Planets** | 50% | 6 km | — (moon-tolerant) | High-contrast targets — haze matters far less than for DSOs. The real limiting factor is atmospheric *seeing* (turbulence), which is not yet modelled. Visibility floor set at 6 km because planets can be fruitfully imaged through moderate haze |
+| **Star clusters** | 50% | 6 km | 70% illumination | Bright, high-contrast targets that tolerate significant moonlight. Globular clusters are visually enjoyable even at full moon. Moon limit relaxed from 50% to 70% based on Cloudy Nights community reports |
+| **Lunar** | 60% | 6 km | ≥ 10% required | Inverted logic — the Moon is the target. Fine detail depends on *seeing*, not transparency. Minimum 10% illumination to have meaningful surface features lit |
+
+### Quality scoring
+
+Each dark hour gets a continuous score 0–1:
+
+```
+score = (1 − cloud_cover/100) × 0.7  +  min(visibility/20_000, 1) × 0.3
+```
+
+Cloud cover is weighted more heavily (70%) because it is the primary binary blocker. Visibility contributes the remaining 30% as a transparency proxy.
+
+Scores map to pill colours:
+
+| Score | Level | Pill colour |
+|---|---|---|
+| ≥ 0.75 | Excellent | Bright gold |
+| 0.50–0.75 | Good | Gold |
+| 0.25–0.50 | Marginal | Dim gold |
+| < 0.25 | Poor | Grey |
+
+---
+
+## What is not yet modelled
+
+**Atmospheric seeing** — turbulence in the atmosphere — is the dominant quality factor for planetary and lunar work. A crystal-clear but turbulent night makes planets look like they're boiling; a slightly hazy but steady night can yield stunning planetary detail. Seeing is measured in arc-seconds FWHM (≤ 0.75" excellent, 1–1.5" good, > 2" poor for planets) and rated on the Pickering scale (1–10). Open-Meteo does not provide a seeing estimate; the [7Timer ASTRO API](https://7timer.info/doc.php) does if this is ever added.
+
+**Light pollution / Bortle scale** — fixed per location, not per night. A dark-sky site dramatically lowers the effective cloud and moon thresholds for faint DSOs.
+
+**Dew point / humidity** — relevant for whether optics will dew over, especially for refractors and SCTs at high humidity. Not currently factored in.
+
+---
+
+## Research sources
+
+Thresholds were calibrated against the following community resources:
+
+- [Cloudy Nights — "What's your max cloud coverage?"](https://www.cloudynights.com/forums/topic/883901-whats-your-maximum-cloud-coverage-amount-eg-42-for-you-to-still-have-a-session/)
+- [Cloudy Nights — "How much cloud cover do you tolerate?" (imaging)](https://www.cloudynights.com/topic/529936-whats-your-max-cloud-cover-tolerance/)
+- [Telescope Live — Role of Moon Illumination in Deep Sky Astrophotography](https://telescope.live/blog/role-moon-illumination-deep-sky-astrophotography)
+- [Milky Way Forecast — Cloud Cover Stargazing Guide](https://milkywayforecast.com/guides/cloud-cover-stargazing)
+- [7Timer Documentation — ASTRO product scales](https://7timer.info/doc.php)
+- [Clear Dark Sky — Seeing Categories](https://www.cleardarksky.com/csk/faq/seeing_catagories.html)
+- [AstroBackyard — Astrophotography During Full Moon](https://astrobackyard.com/astrophotography-full-moon/)
+- [Sky at Night Magazine — Astrophotography During Full Moon](https://www.skyatnightmagazine.com/astrophotography/astrophoto-tips/astrophotography-during-full-moon)
+
+---
 
 ## Run it locally
 
 ```bash
+nvm use 22
 npm install
 npm run dev
 ```
 
-## Deploy to GitHub Pages
+## Deploy
 
-This repo ships with a workflow that builds and publishes automatically.
+Pushing to `main` triggers the GitHub Actions workflow which builds and deploys to GitHub Pages automatically. Enable Pages under **Settings → Pages → Source → GitHub Actions** on first use.
 
-1. Create a new repository on GitHub (any name works).
-2. Push this code to it:
-   ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
-   git push -u origin main
-   ```
-3. In the repo: **Settings → Pages → Source → GitHub Actions**.
-4. Push (or re-run the workflow). Your app appears at
-   `https://YOUR_USERNAME.github.io/YOUR_REPO/`.
+---
 
-Every future push to `main` redeploys automatically.
+## Stack
 
-## Honest caveats
-
-Seeing is the hardest thing in meteorology to forecast — treat it as a
-tendency, not a promise. 7Timer's API also occasionally returns malformed
-JSON; the app retries automatically, but if you see "couldn't reach the
-forecast service," it usually fixes itself in a few seconds.
+- [React](https://react.dev) + [Vite](https://vitejs.dev)
+- [Open-Meteo](https://open-meteo.com) — hourly `cloud_cover` + `visibility`
+- [SunCalc](https://github.com/mourner/suncalc) — sun altitude, moon illumination, moon position
+- Deployed via GitHub Actions → GitHub Pages
